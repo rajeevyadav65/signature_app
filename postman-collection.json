@@ -1,0 +1,279 @@
+{
+  "info": {
+    "name": "Document Signature App — API Collection",
+    "description": "Complete Postman collection for the Document Signature App. Run in order for a full end-to-end test.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",    "value": "http://localhost:8080" },
+    { "key": "token",      "value": "" },
+    { "key": "docId",      "value": "" },
+    { "key": "sigId",      "value": "" },
+    { "key": "signingLink","value": "" }
+  ],
+  "item": [
+    {
+      "name": "🔐 Auth",
+      "item": [
+        {
+          "name": "1. Register User",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "var r = pm.response.json();",
+            "if(r.data && r.data.accessToken) pm.collectionVariables.set('token', r.data.accessToken);",
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "pm.test('Has token', () => pm.expect(r.data.accessToken).to.not.be.undefined);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Rajeev Kumar\",\n  \"email\": \"rajeev@example.com\",\n  \"password\": \"secret123\"\n}" }
+          }
+        },
+        {
+          "name": "2. Login",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "var r = pm.response.json();",
+            "if(r.data && r.data.accessToken) pm.collectionVariables.set('token', r.data.accessToken);",
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has JWT', () => pm.expect(r.data.accessToken).to.not.be.undefined);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"rajeev@example.com\",\n  \"password\": \"secret123\"\n}" }
+          }
+        },
+        {
+          "name": "3. Get My Profile",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has profile data', () => { var r = pm.response.json(); pm.expect(r.data.email).to.eql('rajeev@example.com'); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}],
+            "url": "{{baseUrl}}/api/auth/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📄 Documents",
+      "item": [
+        {
+          "name": "4. Upload PDF Document",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "var r = pm.response.json();",
+            "if(r.data && r.data.id) pm.collectionVariables.set('docId', r.data.id);",
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "pm.test('Document created', () => pm.expect(r.data.id).to.not.be.undefined);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}],
+            "url": "{{baseUrl}}/api/docs/upload",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {"key":"file","type":"file","src":"contract.pdf","description":"Upload a real PDF file"},
+                {"key":"title","value":"Vendor Agreement Q3 2025","type":"text"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "5. List All Documents",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Returns array', () => { var r = pm.response.json(); pm.expect(r.data).to.be.an('array'); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}],
+            "url": "{{baseUrl}}/api/docs"
+          }
+        },
+        {
+          "name": "5b. List PENDING Documents",
+          "request": {
+            "method": "GET",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}],
+            "url": { "raw": "{{baseUrl}}/api/docs?status=PENDING", "query": [{"key":"status","value":"PENDING"}] }
+          }
+        },
+        {
+          "name": "6. Get Document by ID",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Correct doc', () => { var r = pm.response.json(); pm.expect(String(r.data.id)).to.eql(pm.collectionVariables.get('docId')); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}],
+            "url": "{{baseUrl}}/api/docs/{{docId}}"
+          }
+        },
+        {
+          "name": "7. Dashboard Stats",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has stats', () => { var r = pm.response.json(); pm.expect(r.data.totalDocuments).to.be.a('number'); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}],
+            "url": "{{baseUrl}}/api/docs/dashboard"
+          }
+        },
+        {
+          "name": "8. Generate Signing Link",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "var r = pm.response.json();",
+            "if(r.data && r.data.signingUrl) pm.collectionVariables.set('signingLink', r.data.signingUrl);",
+            "if(r.data && r.data.token) pm.collectionVariables.set('signingToken', r.data.token);",
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has signing URL', () => pm.expect(r.data.signingUrl).to.not.be.undefined);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key":"Authorization","value":"Bearer {{token}}"},
+              {"key":"Content-Type","value":"application/json"}
+            ],
+            "url": "{{baseUrl}}/api/docs/{{docId}}/signing-link",
+            "body": { "mode": "raw", "raw": "{\n  \"expiryHours\": 72,\n  \"signerEmail\": \"vendor@company.com\",\n  \"signerName\": \"John Vendor\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "✍️ Signatures",
+      "item": [
+        {
+          "name": "9. Place Signature Field",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "var r = pm.response.json();",
+            "if(r.data && r.data.id) pm.collectionVariables.set('sigId', r.data.id);",
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "pm.test('Signature placed', () => pm.expect(r.data.status).to.eql('PENDING'));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key":"Authorization","value":"Bearer {{token}}"},
+              {"key":"Content-Type","value":"application/json"}
+            ],
+            "url": "{{baseUrl}}/api/signatures",
+            "body": { "mode": "raw", "raw": "{\n  \"documentId\": {{docId}},\n  \"signerName\": \"John Vendor\",\n  \"signerEmail\": \"vendor@company.com\",\n  \"xCoordinate\": 100.0,\n  \"yCoordinate\": 650.0,\n  \"pageNumber\": 1,\n  \"width\": 200.0,\n  \"height\": 60.0\n}" }
+          }
+        },
+        {
+          "name": "10. List Signatures for Document",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Returns array', () => { var r = pm.response.json(); pm.expect(r.data).to.be.an('array'); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}],
+            "url": "{{baseUrl}}/api/signatures/{{docId}}"
+          }
+        },
+        {
+          "name": "11. Sign Document (as signer)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Status is SIGNED', () => { var r = pm.response.json(); pm.expect(r.data.status).to.eql('SIGNED'); });"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key":"Authorization","value":"Bearer {{token}}"},
+              {"key":"Content-Type","value":"application/json"}
+            ],
+            "url": "{{baseUrl}}/api/signatures/{{sigId}}/sign",
+            "body": { "mode": "raw", "raw": "{\n  \"signatureData\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==\",\n  \"signatureType\": \"DRAWN\"\n}" }
+          }
+        },
+        {
+          "name": "11b. Reject Signature (alternative to signing)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key":"Authorization","value":"Bearer {{token}}"},
+              {"key":"Content-Type","value":"application/json"}
+            ],
+            "url": "{{baseUrl}}/api/signatures/{{sigId}}/reject",
+            "body": { "mode": "raw", "raw": "{\n  \"rejectionReason\": \"Contract terms need revision in Section 4.2\"\n}" }
+          }
+        },
+        {
+          "name": "12. Generate Signed PDF (Finalize)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Status SIGNED', () => { var r = pm.response.json(); pm.expect(r.data.status).to.eql('SIGNED'); });"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key":"Authorization","value":"Bearer {{token}}"},
+              {"key":"Content-Type","value":"application/json"}
+            ],
+            "url": "{{baseUrl}}/api/signatures/finalize",
+            "body": { "mode": "raw", "raw": "{\n  \"documentId\": {{docId}}\n}" }
+          }
+        },
+        {
+          "name": "13. Sign via Public Token Link",
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": "{{baseUrl}}/api/signatures/public/{{signingToken}}/{{sigId}}/sign",
+            "body": { "mode": "raw", "raw": "{\n  \"signatureData\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==\",\n  \"signatureType\": \"DRAWN\",\n  \"signerName\": \"John Vendor\",\n  \"signerEmail\": \"vendor@company.com\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🕵️ Audit",
+      "item": [
+        {
+          "name": "14. Get Audit Trail",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has logs', () => { var r = pm.response.json(); pm.expect(r.data.logs).to.be.an('array'); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}],
+            "url": "{{baseUrl}}/api/audit/{{docId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🌐 Public",
+      "item": [
+        {
+          "name": "15. Access Document via Signing Token",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/public/sign/{{signingToken}}"
+          }
+        },
+        {
+          "name": "16. Health Check",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/public/health"
+          }
+        }
+      ]
+    }
+  ]
+}
