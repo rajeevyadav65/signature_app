@@ -1,4 +1,7 @@
 @echo off
+set "APP_PORT=%SERVER_PORT%"
+if "%APP_PORT%"=="" set "APP_PORT=8080"
+
 echo ============================================
 echo   Document Signature App - Setup and Run
 echo ============================================
@@ -35,7 +38,7 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo.
-echo Build successful! Starting on http://localhost:8080 ...
+echo Build successful! Starting on http://localhost:%APP_PORT% ...
 echo.
-java -jar target\signature-app-1.0.0.jar
+java -jar target\signature-app-1.0.0.jar --server.port=%APP_PORT%
 pause

@@ -56,24 +56,33 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable)
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .sessionManagement(session ->
-                    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                // Public endpoints
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/public/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/docs/sign/public/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/signatures/public/**").permitAll()
-                // Static resources
-                .requestMatchers("/uploads/**").permitAll()
-                .requestMatchers("/actuator/health").permitAll()
-                // Everything else requires authentication
-                .anyRequest().authenticated()
-            )
-            .authenticationProvider(authenticationProvider())
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        // 🚀 ADDED: Swagger UI & API Documentation Endpoints
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+
+                        // 🚀 ADDED: H2 Database Console Endpoint
+                        .requestMatchers("/h2-console/**").permitAll()
+
+                        // Public endpoints
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/public/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/docs/sign/public/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/signatures/public/**").permitAll()
+                        // Static resources
+                        .requestMatchers("/uploads/**").permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
+                        // Everything else requires authentication
+                        .anyRequest().authenticated()
+                )
+                // 🚀 ADDED: Allow frames for H2 Console to work properly
+                .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()))
+
+                .authenticationProvider(authenticationProvider())
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

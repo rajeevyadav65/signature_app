@@ -1,5 +1,6 @@
 package com.signatureapp.service;
 
+import com.signatureapp.dto.DocumentDto;
 import com.signatureapp.dto.SignatureDto;
 import com.signatureapp.exception.BadRequestException;
 import com.signatureapp.exception.ResourceNotFoundException;
@@ -264,7 +265,7 @@ public class SignatureService {
         }
     }
 
-    private com.signatureapp.dto.DocumentDto.DocumentResponse generateSignedPdf(
+    private DocumentDto.DocumentResponse generateSignedPdf(
             Document document, User actor, HttpServletRequest httpRequest) {
 
         List<Signature> signatures = signatureRepository.findByDocumentOrderByCreatedAtAsc(document);
@@ -324,8 +325,8 @@ public class SignatureService {
                 .build();
     }
 
-    private com.signatureapp.dto.DocumentDto.DocumentResponse toDocumentResponse(Document doc) {
-        return com.signatureapp.dto.DocumentDto.DocumentResponse.builder()
+    private DocumentDto.DocumentResponse toDocumentResponse(Document doc) {
+        return DocumentDto.DocumentResponse.builder()
                 .id(doc.getId())
                 .title(doc.getTitle())
                 .originalFileName(doc.getOriginalFileName())
